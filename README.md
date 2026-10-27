@@ -4,7 +4,7 @@ Vim-style **transcript navigation** for [Pi](https://github.com/earendil-works/p
 
 ## Install
 
-From npm (once published):
+From npm:
 
 ```sh
 pi install npm:pi-vim-navigation
@@ -35,6 +35,8 @@ Remove any previous `transcript-navigation.ts` installation before enabling this
 | Ctrl+Q | Toggle INPUT / NAV mode |
 | j / Down | Scroll down one line in NAV |
 | k / Up | Scroll up one line in NAV |
+| Ctrl+U | Scroll half a page up in NAV |
+| Ctrl+D | Scroll half a page down in NAV |
 | gg | Scroll to the top in NAV |
 | G | Scroll to the bottom in NAV |
 | i | Return to INPUT and follow live output |
@@ -42,7 +44,9 @@ Remove any previous `transcript-navigation.ts` installation before enabling this
 
 Leaving NAV with Ctrl+Q also follows live output. The editor border displays the current mode. Other keys, including Enter and pasted text, are consumed in NAV to protect the draft. Registered extension shortcuts remain available.
 
-Pi itself handles PageUp/PageDown, Ctrl+U/Ctrl+D, search, and mouse scrolling before input reaches this editor; those controls remain Pi's responsibility. Regular terminal mode passes input through without navigation labels or mode switching. Non-TUI sessions do not install an editor.
+Ctrl+U/Ctrl+D scroll by half the current terminal height (rounded down, at least one line), adapting immediately to terminal resizing. They retain Pi's stock editing/exit behavior in INPUT mode. No global keybinding overrides are needed; remove any `tui.altScreen.halfPageUp` / `halfPageDown` overrides for these keys, since Pi processes global fullscreen bindings before the plugin.
+
+Pi itself handles PageUp/PageDown, search, and mouse scrolling before input reaches this editor; those controls remain Pi's responsibility. Regular terminal mode passes input through without navigation labels or mode switching. Non-TUI sessions do not install an editor.
 
 Ctrl+Y accepts a visible autocomplete suggestion through Pi's Tab action without submitting the prompt. If Tab is rebound or disabled, this acceptance is inert. Bracketed paste is forwarded unchanged in INPUT mode.
 

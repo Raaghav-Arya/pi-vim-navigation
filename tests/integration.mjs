@@ -29,7 +29,7 @@ tui.requestRender = () => {};
 tui.scrollBy = (n) => calls.push(n);
 tui.scrollToTop = () => calls.push("top");
 tui.scrollToBottom = () => calls.push("bottom");
-const kb = new KeybindingsManager({ "tui.altScreen.halfPageUp": "ctrl+u", "tui.altScreen.halfPageDown": "ctrl+d" });
+const kb = new KeybindingsManager({}); // No global Ctrl+U/D scrolling overrides.
 setKeybindings(kb);
 const editor = new TranscriptNavigationEditor(tui, { borderColor: (s) => s }, kb);
 tui.addChild(editor);
@@ -41,10 +41,13 @@ input("\x11"); // Ctrl+Q
 assert.match(editor.render(80).join("\n"), / NAV /);
 input("j"); input("k"); input("g"); input("g"); input("G");
 assert.deepEqual(calls.splice(0), [1, -1, "top", "bottom"]);
-input("\x15"); input("\x04"); // Existing half-page bindings still reach fullscreen.
-assert.equal(calls[0] < 0, true);
-assert.equal(calls[1] > 0, true);
-calls.length = 0;
+input("\x15"); input("\x04"); // Plugin handles half-page scrolling only in NAV.
+assert.deepEqual(calls.splice(0), [-12, 12]);
+terminal.rows = 40;
+input("\x15"); input("\x04");
+assert.deepEqual(calls.splice(0), [-20, 20]);
+terminal.rows = 24;
+assert.equal(editor.getText(), "saved draft");
 let hubOpens = 0;
 editor.onExtensionShortcut = (data) => {
   if (data === "\x1ba") { hubOpens++; return true; }
@@ -72,6 +75,16 @@ for (const width of [1, 5, 12, 40, 80]) {
   // Only the bottom border is changed; stock editor lines contain cursor markers.
   assert.ok(visibleWidth(editor.render(width).at(-1)) <= width);
 }
+
+// Stock INPUT editing must still receive Ctrl+U/D after leaving NAV.
+editor.setText("delete this");
+input("\x15");
+assert.equal(editor.getText(), "");
+editor.setText("abc");
+input("\x01"); // Ctrl+A: move to start
+input("\x04");
+assert.equal(editor.getText(), "bc");
+assert.equal(calls.length, 0);
 
 // A new editor (e.g. after /reload or a mode switch) always starts in input mode.
 const fresh = new TranscriptNavigationEditor(tui, { borderColor: (s) => s }, kb);

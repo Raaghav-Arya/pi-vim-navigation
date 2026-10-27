@@ -1,6 +1,6 @@
 {
   "name": "pi-vim-navigation",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Vim-style fullscreen transcript navigation for Pi, without changing prompt editing.",
   "type": "module",
   "license": "MIT",

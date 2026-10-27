@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { visibleWidth } from "@earendil-works/pi-tui";
 
 // Isolate the host editor boundary, but use Pi's real key parsing and width code.
@@ -20,7 +20,7 @@ import extension, { VimNavigationEditor } from "../src/index.ts";
 type TestEditor = VimNavigationEditor & { inputs: string[]; autocomplete: boolean };
 function setup(mode = "fullscreen") {
   const tui = {
-    mode, scrollBy: vi.fn(), scrollToTop: vi.fn(),
+    mode, terminal: { rows: 24 }, scrollBy: vi.fn(), scrollToTop: vi.fn(),
     scrollToBottom: vi.fn(), requestRender: vi.fn(),
   };
   const editor = new VimNavigationEditor(tui as never, {} as never, {} as never) as TestEditor;
@@ -43,6 +43,37 @@ describe("transcript navigation", () => {
     expect(tui.scrollToTop).toHaveBeenCalledOnce();
     expect(tui.scrollToBottom).toHaveBeenCalledOnce();
     expect(editor.inputs).toEqual([]);
+  });
+
+  it("handles Ctrl+U/D only in NAV, using the current terminal height", () => {
+    const { tui, editor } = setup();
+    editor.handleInput("\x15");
+    editor.handleInput("\x04");
+    expect(editor.inputs).toEqual(["\x15", "\x04"]);
+    expect(tui.scrollBy).not.toHaveBeenCalled();
+    editor.handleInput(toggle);
+    editor.handleInput("\x15");
+    editor.handleInput("\x04");
+    tui.terminal.rows = 41;
+    editor.handleInput("\x1b[117;5u"); // Kitty Ctrl+U
+    editor.handleInput("\x1b[100;5u"); // Kitty Ctrl+D
+    tui.terminal.rows = 1;
+    editor.handleInput("\x15");
+    editor.handleInput("\x04");
+    expect(tui.scrollBy.mock.calls).toEqual([[-12], [12], [-20], [20], [-1], [1]]);
+    expect(editor.inputs).toEqual(["\x15", "\x04"]);
+    editor.handleInput("i");
+    editor.handleInput("\x15");
+    editor.handleInput("\x04");
+    expect(editor.inputs).toEqual(["\x15", "\x04", "\x15", "\x04"]);
+  });
+
+  it("passes Ctrl+U/D through in regular mode", () => {
+    const { tui, editor } = setup("regular");
+    editor.handleInput("\x15");
+    editor.handleInput("\x04");
+    expect(editor.inputs).toEqual(["\x15", "\x04"]);
+    expect(tui.scrollBy).not.toHaveBeenCalled();
   });
 
   it("requires consecutive g keys and clears the prefix after a mode change", () => {

@@ -21,7 +21,7 @@ function isFullscreen(tui: TUI): tui is TuiAltScreen {
 
 // Use the stock editor so prompt editing, application shortcuts, and autocomplete
 // are unchanged outside navigation mode. Fullscreen's own key handler still owns
-// PageUp/Down, Ctrl+U/D, search, and mouse scrolling before input reaches us.
+// PageUp/Down, search, and mouse scrolling before input reaches us.
 export class VimNavigationEditor extends CustomEditor {
   private navigation = false;
   private pendingG = false;
@@ -88,6 +88,11 @@ export class VimNavigationEditor extends CustomEditor {
       tui.scrollBy(1);
     } else if (data === "k" || matchesKey(data, "up")) {
       tui.scrollBy(-1);
+    } else if (matchesKey(data, "ctrl+u") || matchesKey(data, "ctrl+d")) {
+      // Use the public terminal size; the transcript viewport height is private.
+      // Read it per keypress so resizing takes effect immediately.
+      const halfPage = Math.max(1, Math.floor(tui.terminal.rows / 2));
+      tui.scrollBy(matchesKey(data, "ctrl+u") ? -halfPage : halfPage);
     } else if (data === "G") {
       tui.scrollToBottom();
     } else if (matchesKey(data, "escape") || matchesKey(data, "ctrl+c")) {
